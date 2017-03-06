@@ -1,10 +1,9 @@
 <?php
 
-namespace MRussell\CURL\Response\Abstracts;
+namespace MRussell\Http\Response;
 
-use MRussell\CURL\Request\Standard;
-use MRussell\CURL\Request\RequestInterface;
-use MRussell\CURL\Response\ResponseInterface;
+use MRussell\Http\Request\Curl;
+use MRussell\Http\Request\RequestInterface;
 
 abstract class AbstractResponse implements ResponseInterface
 {
@@ -39,12 +38,6 @@ abstract class AbstractResponse implements ResponseInterface
     protected $status;
 
     /**
-     * The last Curl Error that occurred
-     * @var string|boolean - False when cURL Error = 0
-     */
-    protected $error;
-
-    /**
      * The cURL Resource information returned via curl_getinfo
      * @var array
      */
@@ -52,15 +45,16 @@ abstract class AbstractResponse implements ResponseInterface
 
     public function __construct(RequestInterface $Request)
     {
+        if ($Request->getStatus() == Curl::STATUS_CLOSED)
         $this->Request = $Request;
         $this->extract();
     }
 
     public function extract()
     {
-        if ($this->Request->getStatus() == Standard::STATUS_SENT){
+        if ($this->Request->getStatus() == Curl::STATUS_SENT){
             $this->extractInfo($this->Request->getCurlResource());
-            $this->extractResponse($this->Request->getCurlResponse());
+            $this->extractResponse($this->Request->getResponse());
             return TRUE;
         }
         return FALSE;
@@ -78,11 +72,6 @@ abstract class AbstractResponse implements ResponseInterface
             $this->info[$option] = curl_getinfo($curlResource,$option);
         }
         $this->status = $this->info['http_code'];
-        if (curl_errno($curlResource)!== CURLE_OK) {
-            $this->error = curl_error($curlResource);
-        } else {
-            $this->error = false;
-        }
     }
 
     /**
@@ -117,14 +106,6 @@ abstract class AbstractResponse implements ResponseInterface
     public function getHeaders()
     {
         return $this->headers;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getError()
-    {
-        return $this->error;
     }
 
     /**

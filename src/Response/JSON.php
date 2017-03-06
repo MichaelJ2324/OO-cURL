@@ -1,10 +1,8 @@
 <?php
 
-namespace MRussell\CURL\Response;
+namespace MRussell\Http\Response;
 
-use MRussell\CURL\Response\Abstracts\AbstractResponse;
-
-class JSON extends AbstractResponse
+class JSON extends Standard
 {
     /**
      * Get JSON Response

@@ -1,10 +1,8 @@
 <?php
 
-namespace MRussell\CURL\Response;
+namespace MRussell\Http\Response;
 
-use MRussell\CURL\Response\Abstracts\AbstractResponse;
-
-class File extends AbstractResponse
+class File extends Standard
 {
     /**
      * The name of the File from Response
@@ -26,13 +24,11 @@ class File extends AbstractResponse
     public function extract()
     {
         parent::extract();
-        if (!$this->error) {
-            $this->setDestinationPath($this->getDefaultDestinationPath());
-            if (empty($this->fileName)) {
-                $this->extractFileName();
-            }
-            $this->writeFile();
+        $this->setDestinationPath($this->getDefaultDestinationPath());
+        if (empty($this->fileName)) {
+            $this->extractFileName();
         }
+        $this->writeFile();
     }
 
     protected function getDefaultDestinationPath(){

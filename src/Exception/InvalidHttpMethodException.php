@@ -1,6 +1,6 @@
 <?php
 
-namespace Mrussell\CURL\Exception;
+namespace MRussell\Http\Exception;
 
 class InvalidHttpMethodException extends RequestException
 {

@@ -1,9 +1,5 @@
 <?php
 
-namespace MRussell\CURL\Response;
+namespace MRussell\Http\Response;
 
-use MRussell\CURL\Response\Abstracts\AbstractResponse;
-
-class Standard extends AbstractResponse {
-
-}
+class Standard extends AbstractResponse {}

@@ -1,6 +1,6 @@
 <?php
 
-namespace MRussell\CURL\Response;
+namespace MRussell\Http\Response;
 
 interface ResponseInterface
 {
@@ -34,9 +34,4 @@ interface ResponseInterface
      */
     public function getInfo();
 
-    /**
-     * Get the Request Errors if they occurred
-     * @return string|boolean
-     */
-    public function getError();
 }

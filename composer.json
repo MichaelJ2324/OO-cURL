@@ -10,7 +10,7 @@
     }
   ],
   "keywords": [
-    "cURL",
+    "cURL"
   ],
   "require": {
     "php": ">=5.3.0"
@@ -20,12 +20,12 @@
   },
   "autoload": {
     "psr-4": {
-      "MRussell\\CURL\\": "src/"
+      "MRussell\\Http\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "MRussell\\CURL\\Tests\\": "tests/"
+      "MRussell\\Http\\Tests\\": "tests/"
     }
   }
 }

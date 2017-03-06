@@ -1,10 +1,9 @@
 <?php
 
-namespace MRussell\CURL\Request\Abstracts;
+namespace MRussell\Http\Request;
 
-use MRussell\CURL\Exception\InvalidHttpMethodException;
-use MRussell\CURL\Request\RequestInterface;
-use MRussell\CURL\Response\ResponseInterface;
+use MRussell\Http\Exception\InvalidHttpMethodException;
+use MRussell\Http\Request\RequestInterface;
 
 abstract class AbstractRequest implements RequestInterface
 {
@@ -12,6 +11,8 @@ abstract class AbstractRequest implements RequestInterface
     const STATUS_CURL_INIT = 1;
     const STATUS_SENT = 2;
     const STATUS_CLOSED = 3;
+    const STATUS_ERROR = 10;
+
     const HTTP_GET = 'GET';
     const HTTP_POST = 'POST';
     const HTTP_PUT = 'PUT';
@@ -41,9 +42,7 @@ abstract class AbstractRequest implements RequestInterface
      * The HTTP Request Method
      * @var string
      */
-    protected static $_DEFAULT_HTTP_METHOD = 'GET';
-
-    protected static $_RESPONSE_CLASS = 'MRussell\\CURL\\Response\\Standard';
+    protected static $_DEFAULT_HTTP_METHOD = self::HTTP_GET;
 
     /**
      * Whether or not Curl should Initialize when Request Object Does
@@ -57,10 +56,10 @@ abstract class AbstractRequest implements RequestInterface
      */
     protected static $_DEFAULT_OPTIONS = array(
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_0,
-        CURLOPT_HEADER => true,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_USERAGENT => 'PHP-REST-Client'
+        CURLOPT_HEADER => TRUE,
+        CURLOPT_SSL_VERIFYPEER => FALSE,
+        CURLOPT_RETURNTRANSFER => TRUE,
+        CURLOPT_FOLLOWLOCATION => TRUE
     );
 
     /**
@@ -88,10 +87,21 @@ abstract class AbstractRequest implements RequestInterface
     protected $url = '';
 
     /**
-     * The body of the request or payload. JSON Encoded
-     * @var string
+     * The body of the request
+     * @var mixed
      */
-    protected $body = '';
+    protected $body;
+
+    /**
+     * The options to be configured on the Request
+     * @var array
+     */
+    protected $options = array();
+
+    /**
+     * @var bool
+     */
+    protected $error = FALSE;
 
     /**
      * @var integer
@@ -99,21 +109,22 @@ abstract class AbstractRequest implements RequestInterface
     protected $status = 0;
 
     /**
-     * @var ResponseInterface
+     * Marks Request as containing a File, so that Request Body is properly set
+     * @var bool
      */
-    protected $Response;
+    protected $upload = FALSE;
 
     /**
      * The raw response from curl_exec
-     * @var - Curl Response
+     * @var mixed
      */
-    protected $CurlResponse;
+    protected $CurlResponse = NULL;
 
     /**
      * The Curl Resource used to actually send data
-     * @var - Curl Response
+     * @var resource
      */
-    protected $CurlRequest;
+    protected $CurlRequest = NULL;
 
     /**
      * The options configured on the Curl Resource object
@@ -121,16 +132,21 @@ abstract class AbstractRequest implements RequestInterface
      */
     protected $CurlOptions = array();
 
-    public function __construct($url = null,$autoInit = FALSE)
+    /**
+     * @var array
+     */
+    protected $CurlError = array();
+
+
+    public function __construct($url = null,$httpMethod = NULL)
     {
-        if (!empty($url)) {
+        $this->init();
+        if ($url !== NULL) {
             $this->setURL($url);
         }
-        $this->setMethod(static::$_DEFAULT_HTTP_METHOD);
-        $this->setHeaders(static::$_DEFAULT_HEADERS);
-        $this->setOptions(static::$_DEFAULT_OPTIONS);
-        static::$_AUTO_INIT = $autoInit;
-        $this->start();
+        if ($httpMethod !== NULL){
+            $this->setMethod($httpMethod);
+        }
     }
 
     /**
@@ -138,9 +154,43 @@ abstract class AbstractRequest implements RequestInterface
      */
     public function __destruct()
     {
-        if ($this->status !== self::STATUS_CLOSED && $this->status > self::STATUS_INIT) {
-            curl_close($this->CurlRequest);
+        $this->closeCurl();
+    }
+
+    /**
+     * Get or Set the cURL Auto Init Setting for Request Object
+     * @param null $autoInit
+     * @return bool
+     */
+    public static function autoInit($autoInit = NULL){
+        if ($autoInit !== NULL){
+            static::$_AUTO_INIT = boolval($autoInit);
         }
+        return static::$_AUTO_INIT;
+    }
+
+    /**
+     * Get or Set the Default Options for Request Object
+     * @param null $options
+     * @return array
+     */
+    public static function defaultOptions($options = NULL){
+        if (is_array($options)){
+            static::$_DEFAULT_OPTIONS = $options;
+        }
+        return static::$_DEFAULT_OPTIONS;
+    }
+
+    /**
+     * Get or Set the Default Headers for Request Object
+     * @param null $headers
+     * @return array
+     */
+    public static function defaultHeaders($headers = NULL){
+        if (is_array($headers)){
+            static::$_DEFAULT_HEADERS = $headers;
+        }
+        return static::$_DEFAULT_HEADERS;
     }
 
     /**
@@ -183,13 +233,14 @@ abstract class AbstractRequest implements RequestInterface
             if (is_numeric($key) && strpos($value,":") !== FALSE) {
                 $arr = explode(":",$value,2);
                 if (count($arr)==2){
-                    list($header,$value) = $arr;
+                    $header = $arr[0];
+                    $value = trim($arr[1]);
                 }
             } else {
                 $header = $key;
             }
-            if (!empty($header)){
-                $this->addHeader($key, $value);
+            if ($header !== NULL){
+                $this->addHeader($header, $value);
             }
         }
         return $this;
@@ -208,11 +259,10 @@ abstract class AbstractRequest implements RequestInterface
      * @inheritdoc
      */
     public function removeHeader($name) {
-        if (!isset($this->headers[$name])){
-            return FALSE;
+        if (isset($this->headers[$name])){
+            unset($this->headers[$name]);
         }
-        unset($this->headers[$name]);
-        return TRUE;
+        return $this;
     }
 
     /**
@@ -243,6 +293,7 @@ abstract class AbstractRequest implements RequestInterface
                 $File = '@'.$fullFilePath;
             }
             $this->body[$bodyKey] = $File;
+            $this->upload = TRUE;
         }
         return $this;
     }
@@ -258,17 +309,20 @@ abstract class AbstractRequest implements RequestInterface
     /**
      * @inheritdoc
      */
-    public function getCurlResource()
+    public function addOption($option, $value)
     {
-        return $this->CurlRequest;
+        $this->options[$option] = $value;
+        return $this;
     }
 
     /**
      * @inheritdoc
      */
-    public function addOption($option, $value)
+    public function addOptions(array $options)
     {
-        $this->CurlOptions[$option] = $value;
+        foreach($options as $option => $value){
+            $this->addOption($option,$value);
+        }
         return $this;
     }
 
@@ -276,7 +330,7 @@ abstract class AbstractRequest implements RequestInterface
      * @inheritdoc
      */
     public function setOptions(array $options){
-        $this->CurlOptions = $options;
+        $this->options = $options;
         return $this;
     }
 
@@ -284,8 +338,8 @@ abstract class AbstractRequest implements RequestInterface
      * @inheritdoc
      */
     public function removeOption($name) {
-        if (isset($this->CurlOptions[$name])){
-            unset($this->CurlOptions[$name]);
+        if (isset($this->options[$name])){
+            unset($this->options[$name]);
         }
         return $this;
     }
@@ -295,7 +349,7 @@ abstract class AbstractRequest implements RequestInterface
      */
     public function getOptions()
     {
-        return $this->CurlOptions;
+        return $this->options;
     }
 
     /**
@@ -324,80 +378,49 @@ abstract class AbstractRequest implements RequestInterface
      */
     public function send()
     {
-        $this->configureCurl();
-        $this->Response = curl_exec($this->CurlRequest);
-        $this->status = self::STATUS_SENT;
+        if ($this->executeCurl()){
+            $this->status = self::STATUS_SENT;
+        }
         return $this;
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function getCurlResource()
+    {
+        return $this->CurlRequest;
+    }
+
+    /**
+     * @return mixed
+     */
     public function getResponse(){
-        return $this->Response;
+        return $this->CurlResponse;
+    }
+
+    /**
+     * @return array
+     */
+    public function getCurlOptions(){
+        return $this->compileOptions()->CurlOptions;
     }
 
     /**
      * Actually initialize the cURL Resource and configure All options
      */
-    private function configureCurl(){
-        $this->initCurl();
+    private function compileOptions(){
+        $this->CurlOptions = array();
         $this->configureHTTPMethod($this->method);
         $this->configureUrl($this->url);
-        $this->configureHeaders($this->headers);
         $this->configureBody($this->body);
+        $this->configureHeaders($this->headers);
+        $this->configureOptions($this->options);
+        return $this;
     }
 
     /**
-     * Configure the URL on the cURL Resource using curl_setopt
-     * @param $url
-     * @return boolean
-     */
-    protected function configureUrl($url){
-        return curl_setopt($this->CurlRequest,CURLOPT_URL, $url);
-    }
-
-    /**
-     * Configure the Options on the cURL Resource using curl_setopt_array
-     * @param $options array
-     * @return boolean
-     */
-    protected function configureOptions(array $options){
-        return curl_setopt_array($this->CurlRequest,$options);
-    }
-
-    /**
-     * Configure the Body on the cURL Resource
-     * @param $body
-     * @return bool
-     */
-    protected function configureBody($body){
-        switch ($this->method) {
-            case 'GET':
-                if (is_array($body) || is_object($body)){
-                    $queryParams = http_build_query($body);
-                    if (strpos($this->url, "?") === false) {
-                        $queryParams = "?".$queryParams;
-                    } else {
-                        $queryParams = "&".$queryParams;
-                    }
-                } else {
-                    $queryParams = $body;
-                }
-                return $this->configureUrl($this->url.$queryParams);
-            default:
-                return curl_setopt($this->CurlRequest,CURLOPT_POSTFIELDS, $body);
-        }
-    }
-
-    /**
-     * Configure the Headers on the cURL Resource
-     * @param array $headers
-     * @return boolean
-     */
-    protected function configureHeaders(array $headers){
-        return curl_setopt($this->CurlRequest,CURLOPT_HTTPHEADER, $headers);
-    }
-
-    /**
-     * Configure the Curl Options based on Request Type
+     * Configure the Curl Options based for a specific HTTP Method
      * @param $method
      * @return bool
      */
@@ -405,14 +428,103 @@ abstract class AbstractRequest implements RequestInterface
     {
         switch ($method) {
             case 'GET':
-                return curl_setopt($this->CurlRequest,CURLOPT_HTTPGET, true);
+                return $this->addCurlOption(CURLOPT_HTTPGET, true);
             case 'POST':
-                return curl_setopt($this->CurlRequest,CURLOPT_POST, true);
+                return $this->addCurlOption(CURLOPT_POST, true);
             case 'PUT':
-                return curl_setopt($this->CurlRequest,CURLOPT_PUT,true);
+                return $this->addCurlOption(CURLOPT_PUT,true);
             default:
-                return curl_setopt($this->CurlRequest,CURLOPT_CUSTOMREQUEST, $this->method);
+                return $this->addCurlOption(CURLOPT_CUSTOMREQUEST, $method);
         }
+    }
+
+    /**
+     * Configure the URL by setting the CURLOPT_URL Option
+     * @param $url
+     * @return boolean
+     */
+    protected function configureUrl($url){
+        return $this->addCurlOption(CURLOPT_URL, $url);
+    }
+
+    /**
+     * Configure the Headers by setting the CURLOPT_HTTPHEADER Option
+     * @param array $headers
+     * @return boolean
+     */
+    protected function configureHeaders(array $headers){
+        $configuredHeaders = array();
+        foreach($headers as $header => $value){
+            $configuredHeaders[] = "$header: $value";
+        }
+        return $this->addCurlOption(CURLOPT_HTTPHEADER, $configuredHeaders);
+    }
+
+    /**
+     * Configure the Body to be set on the cURL Resource
+     * @param $body
+     * @return bool
+     */
+    protected function configureBody($body){
+        switch ($this->method) {
+            case self::HTTP_GET:
+                if (!empty($body) && !$this->upload){
+                    if (is_array($body) || is_object($body)){
+                        $queryParams = http_build_query($body);
+                    } else {
+                        $queryParams = $body;
+                    }
+                    if (strpos($this->url, "?") === false) {
+                        $queryParams = "?".$queryParams;
+                    } else {
+                        $queryParams = "&".$queryParams;
+                    }
+                    return $this->configureUrl($this->url.$queryParams);
+                }
+            default:
+                if ($this->upload){
+                    $this->addHeader('Content-Type','multipart/form-data');
+                }
+                return $this->addCurlOption(CURLOPT_POSTFIELDS, $body);
+        }
+    }
+
+    /**
+     * @param $options
+     */
+    protected function configureOptions($options){
+        foreach($options as $option => $value){
+            $this->addCurlOption($option,$value);
+        }
+    }
+
+    /**
+     * Configure an option to be set on the cURL Resource
+     * @param $option
+     * @param $value
+     * @return boolean
+     */
+    protected function addCurlOption($option, $value){
+        $this->CurlOptions[$option] = $value;
+        return $this;
+    }
+
+    /**
+     * Initialize the Request Object, setting defaults for certain properties
+     * @return bool
+     */
+    protected function init()
+    {
+        $this->setMethod(static::$_DEFAULT_HTTP_METHOD);
+        $this->setHeaders(static::$_DEFAULT_HEADERS);
+        $this->setOptions(static::$_DEFAULT_OPTIONS);
+        $this->body = NULL;
+        $this->error = NULL;
+        $this->status = self::STATUS_INIT;
+        if (self::$_AUTO_INIT){
+            return $this->initCurl();
+        }
+        return TRUE;
     }
 
     /**
@@ -420,23 +532,10 @@ abstract class AbstractRequest implements RequestInterface
      */
     public function reset()
     {
-        if ($this->status > self::STATUS_CURL_INIT && gettype($this->CurlRequest) == 'resource') {
+        if ($this->status > self::STATUS_CURL_INIT) {
             $this->close();
         }
-        $this->start();
-        return $this;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function start()
-    {
-        if (static::$_AUTO_INIT){
-            $this->initCurl();
-        }
-        $this->configureResponse();
-        $this->status = self::STATUS_INIT;
+        $this->init();
         return $this;
     }
 
@@ -453,19 +552,62 @@ abstract class AbstractRequest implements RequestInterface
     /**
      * @return $this
      */
-    private function initCurl(){
+    private function initCurl()
+    {
         if ($this->status < self::STATUS_CURL_INIT){
             $this->CurlRequest = curl_init();
             $this->status = self::STATUS_CURL_INIT;
         }
-        return $this;
+        return ($this->status == self::STATUS_CURL_INIT);
+    }
+
+    /**
+     * Loop through CurlOptions and use curl_setopt to set options on cURL Resource
+     * @return $this
+     */
+    private function configureCurl()
+    {
+        foreach($this->getCurlOptions() as $option => $value){
+            curl_setopt($this->CurlRequest,$option,$value);
+        }
+        return TRUE;
+    }
+
+    /**
+     * Execute Curl Resource and set the Curl Response
+     * @return $this
+     */
+    private function executeCurl()
+    {
+        if ($this->initCurl()){
+            $this->configureCurl();
+            $this->CurlResponse = curl_exec($this->CurlRequest);
+            $this->checkForError();
+            return TRUE;
+        }
+        return FALSE;
+    }
+
+    /**
+     * Check cURL Resource for Errors and add them to CurlError property if so
+     */
+    private function checkForError(){
+        $curlErrNo = curl_errno($this->CurlRequest);
+        if ($curlErrNo !== CURLE_OK) {
+            $this->error = TRUE;
+            $this->CurlError = array(
+                'error' => $curlErrNo,
+                'error_message' => curl_error($this->CurlRequest)
+            );
+        }
     }
 
     /**
      * @return $this
      */
-    private function closeCurl(){
-        if ($this->status > self::STATUS_CURL_INIT) {
+    private function closeCurl()
+    {
+        if (gettype($this->CurlRequest) == 'resource') {
             curl_close($this->CurlRequest);
             $this->CurlRequest = NULL;
         }
@@ -485,6 +627,22 @@ abstract class AbstractRequest implements RequestInterface
      */
     public function getStatusString()
     {
-        return static::$_STATUS_CODES[$this->status];
+        return self::$_STATUS_CODES[$this->status];
+    }
+
+    /**
+     * Returns if an error occurred or not
+     * @return bool
+     */
+    public function error(){
+        return $this->error;
+    }
+
+    /**
+     * Returns the Error details
+     * @return array
+     */
+    public function getError(){
+        return $this->CurlError;
     }
 }

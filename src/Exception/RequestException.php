@@ -1,6 +1,6 @@
 <?php
 
-namespace MRussell\CURL\Exception;
+namespace MRussell\Http\Exception;
 
 class RequestException extends \Exception
 {

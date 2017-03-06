@@ -1,14 +1,14 @@
 <?php
 
-namespace MRussell\CURL\Request;
+namespace MRussell\Http\Request;
 
-class JSON extends Standard
+class JSON extends AbstractRequest
 {
     /**
      * @inheritdoc
      */
     protected static $_DEFAULT_HEADERS = array(
-        "Content-Type: application/json"
+        "Content-Type" => "application/json"
     );
 
     /**
@@ -27,13 +27,13 @@ class JSON extends Standard
     /**
      * @inheritdoc
      */
-    protected static $_DEFAULT_HTTP_METHOD = 'GET';
+    protected static $_DEFAULT_HTTP_METHOD = self::HTTP_GET;
 
     /**
      * @inheritdoc
      */
     protected function configureBody($body) {
-        if ($this->method !== self::HTTP_GET){
+        if ($this->method !== self::HTTP_GET && !$this->upload){
             $body = json_encode($body);
         }
         return parent::configureBody($body);
