@@ -72,7 +72,7 @@ class AbstractResponseTest extends \PHPUnit_Framework_TestCase
         $this->Request->send();
         $this->assertEquals(TRUE,$Response->extract());
         $info = $Response->getInfo();
-        $this->assertEquals(TRUE,isset($info[CURLINFO_CERTINFO]));
-        $this->assertEquals(TRUE,isset($info[CURLINFO_SSL_ENGINES]));
+        $this->assertEquals(TRUE,isset($info[CURLINFO_SSL_VERIFYRESULT]));
+        $this->assertEquals(TRUE,isset($info[CURLINFO_REDIRECT_COUNT]));
     }
 }
