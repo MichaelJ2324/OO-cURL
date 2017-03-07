@@ -397,7 +397,6 @@ class AbstractRequestTest extends \PHPUnit_Framework_TestCase {
             1 => 'X-TEST-Value: Value',
             2 => 'X-Test-Cookie: Cookie 1234',
         ),$CompiledOptions[CURLOPT_HTTPHEADER]);
-        $this->assertEquals(TRUE,$CompiledOptions[CURLOPT_HTTPGET]);
         $this->assertEquals(CURL_HTTP_VERSION_1_0,$CompiledOptions[CURLOPT_HTTP_VERSION]);
         $this->assertEquals(TRUE,$CompiledOptions[CURLOPT_HEADER]);
         $this->assertEquals(FALSE,$CompiledOptions[CURLOPT_SSL_VERIFYPEER]);

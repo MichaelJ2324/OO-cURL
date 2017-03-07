@@ -1,17 +1,20 @@
 <?php
-/**
- * ©[2016] SugarCRM Inc.  Licensed by SugarCRM under the Apache 2.0 license.
- */
 
-namespace SugarAPI\SDK\Tests\Stubs\Response;
+namespace MRussell\Http\Tests\Response;
+
+use MRussell\Http\Request\Curl;
+use MRussell\Http\Request\RequestInterface;
+use MRussell\Http\Response\Standard;
+use MRussell\Http\Tests\Stubs\ResponseTestStub;
 
 /**
  * Class AbstractResponseTest
- * @package SugarAPI\SDK\Tests\Response\AbstractResponseTest
- * @coversDefaultClass SugarAPI\SDK\Response\Abstracts\AbstractResponse
+ * @package MRussell\Http\Tests\Response\AbstractResponseTest
+ * @coversDefaultClass MRussell\Http\Response\AbstractResponse
  * @group responses
  */
-class AbstractResponseTest extends \PHPUnit_Framework_TestCase {
+class AbstractResponseTest extends \PHPUnit_Framework_TestCase
+{
 
     public static function setUpBeforeClass()
     {
@@ -21,64 +24,55 @@ class AbstractResponseTest extends \PHPUnit_Framework_TestCase {
     {
     }
 
-    protected $Curl;
-    protected $CurlResponse = 'Test is a test';
+    /**
+     * @var RequestInterface
+     */
+    protected $Request;
 
     public function setUp()
     {
-        $this->Curl = curl_init();
+        $this->Request = new Curl('www.google.com');
         parent::setUp();
     }
 
     public function tearDown()
     {
-        curl_close($this->Curl);
-        unset($this->Curl);
+        unset($this->Request);
         parent::tearDown();
     }
 
     /**
      * @covers ::__construct
-     * @covers ::setCurlResponse
+     * @covers ::extract
      * @covers ::extractInfo
      * @covers ::extractResponse
      * @covers ::getInfo
      * @covers ::getBody
-     * @covers ::getError
      * @covers ::getHeaders
      * @covers ::getStatus
      * @group abstractResponse
      */
     public function testConstructor(){
-        $Stub = new ResponseStub($this->Curl);
-        $this->assertEmpty($Stub->getInfo());
-        $this->assertEmpty($Stub->getBody());
-        $this->assertEmpty($Stub->getError());
-        $this->assertEmpty($Stub->getHeaders());
-        $this->assertEmpty($Stub->getStatus());
-        unset($Stub);
-
-        $Stub = new ResponseStub($this->Curl,$this->CurlResponse);
-        $this->assertNotEmpty($Stub->getInfo());
-        $this->assertEquals($this->CurlResponse,$Stub->getBody());
-        $this->assertEquals(FALSE,$Stub->getError());
-        $this->assertEmpty($Stub->getHeaders());
-        $this->assertEmpty($Stub->getStatus());
+        $Response = new Standard($this->Request);
+        $this->assertEmpty($Response->getInfo());
+        $this->assertEmpty($Response->getBody());
+        $this->assertEmpty($Response->getHeaders());
+        $this->assertEmpty($Response->getStatus());
+        $this->assertEquals(FALSE,$Response->extract());
+        $this->Request->send();
+        $this->assertEquals(TRUE,$Response->extract());
+        $this->assertNotEmpty($Response->getInfo());
+        $this->assertNotEmpty($Response->getBody());
+        $this->assertNotEmpty($Response->getHeaders());
+        $this->assertNotEmpty($Response->getStatus());
     }
 
-    /**
-     * @covers ::extractInfo
-     * @covers ::getError
-     * @group abstractResponse
-     */
-    public function testCurlErrors(){
-        curl_setopt($this->Curl,CURLOPT_URL, 'test.foo.bar');
-        curl_exec($this->Curl);
-        $Stub = new ResponseStub($this->Curl,$this->CurlResponse);
-        $this->assertNotEmpty($Stub->getInfo());
-        $this->assertNotEmpty($Stub->getError());
-        $this->assertEmpty($Stub->getBody());
-        $this->assertEmpty($Stub->getHeaders());
-        $this->assertEmpty($Stub->getStatus());
+    public function testExtraInfo(){
+        $Response = new ResponseTestStub($this->Request);
+        $this->Request->send();
+        $this->assertEquals(TRUE,$Response->extract());
+        $info = $Response->getInfo();
+        $this->assertEquals(TRUE,isset($info[CURLINFO_CERTINFO]));
+        $this->assertEquals(TRUE,isset($info[CURLINFO_SSL_ENGINES]));
     }
 }

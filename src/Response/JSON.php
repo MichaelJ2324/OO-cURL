@@ -2,7 +2,7 @@
 
 namespace MRussell\Http\Response;
 
-class JSON extends Standard
+class JSON extends AbstractResponse
 {
     /**
      * Get JSON Response

@@ -45,16 +45,16 @@ abstract class AbstractResponse implements ResponseInterface
 
     public function __construct(RequestInterface $Request)
     {
-        if ($Request->getStatus() == Curl::STATUS_CLOSED)
         $this->Request = $Request;
         $this->extract();
     }
 
     public function extract()
     {
-        if ($this->Request->getStatus() == Curl::STATUS_SENT){
+        if ($this->Request->getStatus() == Curl::STATUS_SENT && empty($this->Request->getError())){
             $this->extractInfo($this->Request->getCurlResource());
             $this->extractResponse($this->Request->getResponse());
+            $this->Request->close();
             return TRUE;
         }
         return FALSE;

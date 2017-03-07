@@ -2,7 +2,9 @@
 
 namespace MRussell\Http\Response;
 
-class File extends Standard
+use MRussell\Http\Request\RequestInterface;
+
+class File extends AbstractResponse
 {
     /**
      * The name of the File from Response
@@ -16,21 +18,42 @@ class File extends Standard
      */
     protected $destinationPath;
 
+
+    public function __construct(RequestInterface $Request,$destination = '',$filename = '') {
+        if ($destination !== ''){
+            $this->setDestinationPath($destination);
+        }
+        if ($filename !== ''){
+            $this->setFileName($filename);
+        }
+        parent::__construct($Request);
+    }
+
     /**
      * @inheritdoc
-     * Extract Filename from Headers
-     * @param mixed $curlResponse
+     * Extract Filename from Headers and Set Default Destination Path if not set
+     * Write response to File
      */
     public function extract()
     {
-        parent::extract();
-        $this->setDestinationPath($this->getDefaultDestinationPath());
-        if (empty($this->fileName)) {
-            $this->extractFileName();
+        if (parent::extract()){
+            if (empty($this->destinationPath)){
+                $this->setDestinationPath($this->getDefaultDestinationPath());
+            }
+            if (empty($this->fileName)) {
+                $this->extractFileName();
+            }
+            if ($this->writeFile()){
+                return TRUE;
+            }
         }
-        $this->writeFile();
+        return FALSE;
     }
 
+    /**
+     * Get the default Destination Path to Store Files retrieved via Curl
+     * @return string
+     */
     protected function getDefaultDestinationPath(){
         return sys_get_temp_dir().'/CurlFiles';
     }
@@ -68,7 +91,8 @@ class File extends Standard
      */
     public function setFileName($fileName)
     {
-        $fileName = preg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $fileName);
+        $fileName = str_replace(" ", "_", $fileName);
+        $fileName = preg_replace("([^\w\s\d\-\_~\'\[\]\(\).])", '', $fileName);
         $fileName = preg_replace("([\.]{2,})", '', $fileName);
         $this->fileName = $fileName;
         return $this;

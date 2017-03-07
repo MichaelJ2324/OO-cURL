@@ -1,19 +1,18 @@
 <?php
-/**
- * ©[2016] SugarCRM Inc.  Licensed by SugarCRM under the Apache 2.0 license.
- */
 
-namespace SugarAPI\SDK\Tests\Stubs\Response;
+namespace MRussell\Http\Tests\Response;
 
-use SugarAPI\SDK\Response\JSON;
+use MRussell\Http\Request\JSON as JSONRequest;
+use MRussell\Http\Response\JSON;
 
 /**
  * Class JSONTest
- * @package SugarAPI\SDK\Tests\Stubs\Response
- * @coversDefaultClass SugarAPI\SDK\Response\JSON
+ * @package MRussell\Http\Tests\Response
+ * @coversDefaultClass MRussell\Http\Response\JSON
  * @group responses
  */
-class JSONTest extends \PHPUnit_Framework_TestCase {
+class JSONTest extends \PHPUnit_Framework_TestCase
+{
 
     public static function setUpBeforeClass()
     {
@@ -23,18 +22,19 @@ class JSONTest extends \PHPUnit_Framework_TestCase {
     {
     }
 
-    protected $Curl;
-    protected $CurlResponse = '{"foo":"bar","bar":"foo"}';
+    /**
+     * @var \MRussell\Http\Request\JSON
+     */
+    protected $Request;
 
     public function setUp()
     {
-        $this->Curl = curl_init();
+        $this->Request = new JSONRequest('https://scarlett.sugarondemand.com/rest/v10/releases');
         parent::setUp();
     }
 
     public function tearDown()
     {
-        curl_close($this->Curl);
         unset($this->Curl);
         parent::tearDown();
     }
@@ -45,22 +45,22 @@ class JSONTest extends \PHPUnit_Framework_TestCase {
      * @group jsonResponse
      */
     public function testJson(){
-        $Stub = new JSON($this->Curl);
-        $this->assertEmpty($Stub->getInfo());
-        $this->assertEmpty($Stub->getBody());
-        $this->assertEmpty($Stub->getError());
-        $this->assertEmpty($Stub->getHeaders());
-        $this->assertEmpty($Stub->getStatus());
-        $this->assertEmpty($Stub->getJson());
-        unset($Stub);
-
-        $Stub = new JSON($this->Curl,$this->CurlResponse);
-        $this->assertNotEmpty($Stub->getInfo());
-        $this->assertEquals($this->CurlResponse,$Stub->getJson());
-        $this->assertEquals(FALSE,$Stub->getError());
-        $this->assertEmpty($Stub->getHeaders());
-        $this->assertEmpty($Stub->getStatus());
-        $this->assertEquals(json_decode($this->CurlResponse),$Stub->getBody(FALSE));
-        $this->assertEquals(json_decode($this->CurlResponse,TRUE),$Stub->getBody());
+        $Response = new JSON($this->Request);
+        $this->assertEmpty($Response->getInfo());
+        $this->assertEmpty($Response->getBody());
+        $this->assertEmpty($Response->getHeaders());
+        $this->assertEmpty($Response->getStatus());
+        $this->assertEmpty($Response->getJson());
+        $this->Request->send();
+        $this->assertEquals(TRUE,$Response->extract());
+        $this->assertNotEmpty($Response->getInfo());
+        $body = $Response->getBody();
+        $this->assertNotEmpty($body);
+        $this->assertEquals(TRUE,is_array($body));
+        $json = $Response->getJson();
+        $this->assertEquals('string',gettype($json));
+        $this->assertEquals($body,json_decode($json,TRUE));
+        $this->assertNotEmpty($Response->getHeaders());
+        $this->assertNotEmpty($Response->getStatus());
     }
 }

@@ -43,17 +43,17 @@ class FileTest extends \PHPUnit_Framework_TestCase {
      */
     public function testSetMethod(){
         $Request = new File();
-        $this->assertEquals(Curl::HTTP_POST,$Request->getMethod());
+        $this->assertEquals(Curl::HTTP_GET,$Request->getMethod());
+        $CurlOptions = $Request->getCurlOptions();
+        $this->assertEmpty($CurlOptions[CURLOPT_HTTPHEADER]);
+        $this->assertEmpty($Request->getHeaders());
+
+        $Request->setMethod(Curl::HTTP_POST);
         $CurlOptions = $Request->getCurlOptions();
         $this->assertNotEmpty($CurlOptions[CURLOPT_HTTPHEADER]);
         $this->assertEquals('Content-Type: multipart/form-data',$CurlOptions[CURLOPT_HTTPHEADER][0]);
         $headers = $Request->getHeaders();
         $this->assertEquals('multipart/form-data',$headers['Content-Type']);
-
-        $Request->setMethod(Curl::HTTP_GET);
-        $CurlOptions = $Request->getCurlOptions();
-        $this->assertEmpty($CurlOptions[CURLOPT_HTTPHEADER]);
-        $this->assertEmpty($Request->getHeaders());
 
         $Request->setMethod(Curl::HTTP_PUT);
         $CurlOptions = $Request->getCurlOptions();

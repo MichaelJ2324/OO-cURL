@@ -156,4 +156,10 @@ interface RequestInterface
      * @return integer
      */
     public function getStatus();
+
+    /**
+     * Retrieve error that might have occurred on Request
+     * @return mixed
+     */
+    public function getError();
 }

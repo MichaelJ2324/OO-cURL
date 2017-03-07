@@ -427,15 +427,32 @@ abstract class AbstractRequest implements RequestInterface
     protected function configureHTTPMethod($method)
     {
         switch ($method) {
-            case 'GET':
-                return $this->addCurlOption(CURLOPT_HTTPGET, true);
-            case 'POST':
-                return $this->addCurlOption(CURLOPT_POST, true);
-            case 'PUT':
-                return $this->addCurlOption(CURLOPT_PUT,true);
+            case self::HTTP_GET:
+                $setHttpGET = FALSE;
+                if (isset($this->CurlOptions[CURLOPT_POST])){
+                    $setHttpGET = TRUE;
+                    unset($this->CurlOptions[CURLOPT_POST]);
+                }
+                if (isset($this->CurlOptions[CURLOPT_PUT])){
+                    $setHttpGET = TRUE;
+                    unset($this->CurlOptions[CURLOPT_PUT]);
+                }
+                if (isset($this->CurlOptions[CURLOPT_POSTFIELDS])){
+                    $setHttpGET = TRUE;
+                    unset($this->CurlOptions[CURLOPT_POSTFIELDS]);
+                }
+                if ($setHttpGET){
+                    return $this->addCurlOption(CURLOPT_HTTPGET,TRUE);
+                }
+                break;
+            case self::HTTP_POST:
+                return $this->addCurlOption(CURLOPT_POST, TRUE);
+            case self::HTTP_PUT:
+                return $this->addCurlOption(CURLOPT_PUT, TRUE);
             default:
                 return $this->addCurlOption(CURLOPT_CUSTOMREQUEST, $method);
         }
+        return TRUE;
     }
 
     /**
@@ -468,18 +485,21 @@ abstract class AbstractRequest implements RequestInterface
     protected function configureBody($body){
         switch ($this->method) {
             case self::HTTP_GET:
-                if (!empty($body) && !$this->upload){
+                if (!$this->upload){
                     if (is_array($body) || is_object($body)){
                         $queryParams = http_build_query($body);
                     } else {
                         $queryParams = $body;
                     }
-                    if (strpos($this->url, "?") === false) {
-                        $queryParams = "?".$queryParams;
-                    } else {
-                        $queryParams = "&".$queryParams;
+                    if (!empty($body)){
+                        if (strpos($this->url, "?") === false) {
+                            $queryParams = "?".$queryParams;
+                        } else {
+                            $queryParams = "&".$queryParams;
+                        }
+                        return $this->configureUrl($this->url.$queryParams);
                     }
-                    return $this->configureUrl($this->url.$queryParams);
+                    break;
                 }
             default:
                 if ($this->upload){
