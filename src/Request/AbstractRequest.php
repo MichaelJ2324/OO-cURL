@@ -164,7 +164,7 @@ abstract class AbstractRequest implements RequestInterface
      */
     public static function autoInit($autoInit = NULL){
         if ($autoInit !== NULL){
-            static::$_AUTO_INIT = boolval($autoInit);
+            static::$_AUTO_INIT = (bool) $autoInit;
         }
         return static::$_AUTO_INIT;
     }

@@ -140,7 +140,6 @@ class AbstractRequestTest extends \PHPUnit_Framework_TestCase {
         Curl::autoInit(TRUE);
         $Another = new Curl($this->url);
         $this->assertNotEmpty($Another->getCurlResource());
-        $this->assertEquals(gettype($Another->getCurlResource()),'resource');
         $this->assertEquals($Another->getStatus(),Curl::STATUS_CURL_INIT);
         $this->assertEquals($Another->getStatusString(),'Curl Initialized');
         $this->assertEquals($Curl->autoInit(),TRUE);
@@ -149,7 +148,6 @@ class AbstractRequestTest extends \PHPUnit_Framework_TestCase {
         unset($Curl);
         $Curl = new Curl();
         $this->assertNotEmpty($Curl->getCurlResource());
-        $this->assertEquals(gettype($Curl->getCurlResource()),'resource');
         $this->assertEquals($Curl->getStatus(),Curl::STATUS_CURL_INIT);
         $this->assertEquals($Curl->getStatusString(),'Curl Initialized');
         $this->assertEquals($Curl->autoInit(),TRUE);
