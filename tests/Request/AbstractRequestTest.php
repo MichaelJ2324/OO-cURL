@@ -487,9 +487,10 @@ class AbstractRequestTest extends \PHPUnit_Framework_TestCase {
         $Curl = new Curl($this->url);
         $CurlObject = $Curl->getCurlResource();
         $this->assertEquals(Curl::STATUS_CURL_INIT,$Curl->getStatus());
+        $this->assertEquals('curl',get_resource_type($CurlObject));
         $Curl->close();
         $this->assertEquals(Curl::STATUS_CLOSED,$Curl->getStatus());
-        $this->assertNotEquals('resource',gettype($CurlObject));
+        $this->assertNotEquals('curl',get_resource_type($CurlObject));
         $Curl->reset();
         $this->assertEquals(Curl::STATUS_CURL_INIT,$Curl->getStatus());
         $this->assertNotEquals($CurlObject,$Curl->getCurlResource());
@@ -508,7 +509,9 @@ class AbstractRequestTest extends \PHPUnit_Framework_TestCase {
         $this->assertNotEquals($CurlObject,$Curl->getCurlResource());
         $this->assertEmpty($Curl->getCurlResource());
         $Curl->send();
+        $CurlObject = $Curl->getCurlResource();
         $this->assertEquals(Curl::STATUS_SENT,$Curl->getStatus());
+        $this->assertEquals('curl',get_resource_type($CurlObject));
         $Curl->send();
         $this->assertEquals(Curl::STATUS_SENT,$Curl->getStatus());
         $Curl->close();
@@ -534,6 +537,6 @@ class AbstractRequestTest extends \PHPUnit_Framework_TestCase {
         $Curl = new Curl($this->url);
         $CurlResource = $Curl->getCurlResource();
         unset($Curl);
-        $this->assertNotEquals('resource',gettype($CurlResource));
+        $this->assertNotEquals('curl',get_resource_type($CurlResource));
     }
 }
