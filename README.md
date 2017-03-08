@@ -1,5 +1,7 @@
 [![Minimum PHP Version](https://img.shields.io/badge/php-%3E%3D%205.3-8892BF.svg)](https://php.net/)
-[![Build Status](https://travis-ci.org/MichaelJ2324/OO-cURL.svg?branch=master)
+[![Build Status](https://travis-ci.org/MichaelJ2324/OO-cURL.svg?branch=master)](https://travis-ci.org/MichaelJ2324/OO-cURL)
+[![Coverage Status](https://coveralls.io/repos/github/MichaelJ2324/OO-cURL/badge.svg)](https://coveralls.io/github/MichaelJ2324/OO-cURL)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 #Object Oriented cURL#
 

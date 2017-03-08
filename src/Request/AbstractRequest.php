@@ -287,15 +287,30 @@ abstract class AbstractRequest implements RequestInterface
      */
     public function addFile($bodyKey,$fullFilePath){
         if (file_exists($fullFilePath) && is_readable($fullFilePath)){
+            $File = $this->getLegacyFileHandle($fullFilePath);
             if (version_compare(PHP_VERSION, '5.5.0') >= 0){
-                $File = new \CURLFile($fullFilePath);
-            } else {
-                $File = '@'.$fullFilePath;
+                $File = $this->getFileHandle($fullFilePath);
             }
             $this->body[$bodyKey] = $File;
             $this->upload = TRUE;
         }
         return $this;
+    }
+
+    /**
+     * @param $fullFilePath
+     * @return string
+     */
+    private function getLegacyFileHandle($fullFilePath){
+        return '@'.$fullFilePath;
+    }
+
+    /**
+     * @param $fullFilePath
+     * @return \CURLFile
+     */
+    private function getFileHandle($fullFilePath){
+        return new \CURLFile($fullFilePath);
     }
 
     /**
@@ -428,22 +443,6 @@ abstract class AbstractRequest implements RequestInterface
     {
         switch ($method) {
             case self::HTTP_GET:
-                $setHttpGET = FALSE;
-                if (isset($this->CurlOptions[CURLOPT_POST])){
-                    $setHttpGET = TRUE;
-                    unset($this->CurlOptions[CURLOPT_POST]);
-                }
-                if (isset($this->CurlOptions[CURLOPT_PUT])){
-                    $setHttpGET = TRUE;
-                    unset($this->CurlOptions[CURLOPT_PUT]);
-                }
-                if (isset($this->CurlOptions[CURLOPT_POSTFIELDS])){
-                    $setHttpGET = TRUE;
-                    unset($this->CurlOptions[CURLOPT_POSTFIELDS]);
-                }
-                if ($setHttpGET){
-                    return $this->addCurlOption(CURLOPT_HTTPGET,TRUE);
-                }
                 break;
             case self::HTTP_POST:
                 return $this->addCurlOption(CURLOPT_POST, TRUE);

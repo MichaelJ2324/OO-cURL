@@ -467,6 +467,34 @@ class AbstractRequestTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @covers ::getLegacyFileHandle
+     */
+    public function testLegacyFileHandle(){
+        $filePath = realpath(__DIR__.'/../Data/test.txt');
+        $Request = new Curl();
+        $Class = new \ReflectionClass('MRussell\Http\Request\Curl');
+        $method = $Class->getMethod('getLegacyFileHandle');
+        $method->setAccessible(TRUE);
+        $this->assertEquals('@'.$filePath,$method->invoke($Request,$filePath));
+    }
+
+    /**
+     * @covers ::getFileHandle
+     */
+    public function testFileHandle(){
+        if (version_compare(PHP_VERSION, '5.5.0') >= 0) {
+            $filePath = realpath(__DIR__ . '/../Data/test.txt');
+            $Request = new Curl();
+            $Class = new \ReflectionClass('MRussell\Http\Request\Curl');
+            $method = $Class->getMethod('getFileHandle');
+            $method->setAccessible(TRUE);
+            $CurlFile = $method->invoke($Request, $filePath);
+            $this->assertEquals(TRUE, is_object($CurlFile));
+            $this->assertInstanceOf('CURLFile', $CurlFile);
+        }
+    }
+
+    /**
      * @covers ::getCurlResource
      * @covers ::getResponse
      * @covers ::getStatus

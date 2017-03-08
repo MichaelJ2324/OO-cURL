@@ -133,4 +133,33 @@ class FileTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(FALSE,$Response->writeFile());
     }
 
+    /**
+     * @covers ::extractFileName
+     * @group response
+     */
+    public function testExtractFileName(){
+        $Response = new File($this->Request);
+        $Class = new \ReflectionClass('MRussell\Http\Response\File');
+        $property = $Class->getProperty("headers");
+        $property->setAccessible(TRUE);
+        $property->setValue($Response,"HTTP/1.1 200 OK\r\n
+            Date: Wed, 08 Mar 2017 13:46:24 GMT\r\n
+            Server: Apache/2.4.18 (Unix) LibreSSL/2.2.7 PHP/5.4.45\r\n
+            X-Powered-By: PHP/5.4.45\r\n
+            Expires: \r\n
+            Cache-Control: max-age=0, private\r\n
+            Pragma: \r\n
+            Content-Disposition: attachment; filename=\"test.txt\"\r\n
+            X-Content-Type-Options: nosniff\r\n
+            ETag: d41d8cd98f00b204e9800998ecf8427e\r\n
+            Access-Control-Allow-Origin: *\r\n
+            Content-Length: 1763\r\n
+            Connection: close\r\n
+            Content-Type: text/plain");
+        $method = $Class->getMethod('extractFileName');
+        $method->setAccessible(TRUE);
+        $method->invoke($Response);
+        $this->assertEquals('test.txt',$Response->getFileName());
+    }
+
 }
