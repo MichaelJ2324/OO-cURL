@@ -2,8 +2,23 @@
 
 namespace MRussell\Http\Response;
 
+use MRussell\Http\Request\RequestInterface;
+
 interface ResponseInterface
 {
+    /**
+     * Set the Request Object that the Response is extracted from
+     * @param RequestInterface $Request
+     * @return mixed
+     */
+    public function setRequest(RequestInterface $Request);
+
+    /**
+     * Get the current configured Request Object
+     * @return mixed
+     */
+    public function getRequest();
+
     /**
      * Extract the Response information from the Request Object
      * @return mixed

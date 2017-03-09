@@ -53,11 +53,20 @@ class AbstractResponseTest extends \PHPUnit_Framework_TestCase
      * @group abstractResponse
      */
     public function testConstructor(){
+        $Response = new Standard();
+        $this->assertEmpty($Response->getInfo());
+        $this->assertEmpty($Response->getBody());
+        $this->assertEmpty($Response->getHeaders());
+        $this->assertEmpty($Response->getStatus());
+        $this->assertEmpty($Response->getRequest());
+        $this->assertEquals(FALSE,$Response->extract());
+        unset($Response);
         $Response = new Standard($this->Request);
         $this->assertEmpty($Response->getInfo());
         $this->assertEmpty($Response->getBody());
         $this->assertEmpty($Response->getHeaders());
         $this->assertEmpty($Response->getStatus());
+        $this->assertEquals($this->Request,$Response->getRequest());
         $this->assertEquals(FALSE,$Response->extract());
         $this->Request->send();
         $this->assertEquals(TRUE,$Response->extract());
@@ -65,8 +74,43 @@ class AbstractResponseTest extends \PHPUnit_Framework_TestCase
         $this->assertNotEmpty($Response->getBody());
         $this->assertNotEmpty($Response->getHeaders());
         $this->assertNotEmpty($Response->getStatus());
+        $this->assertEquals($this->Request,$Response->getRequest());
     }
 
+    /**
+     * @covers ::setRequest
+     * @covers ::getRequest
+     * @covers ::reset
+     */
+    public function testSetRequest(){
+        $Response = new Standard();
+        $this->assertEmpty($Response->getInfo());
+        $this->assertEmpty($Response->getBody());
+        $this->assertEmpty($Response->getHeaders());
+        $this->assertEmpty($Response->getStatus());
+        $this->assertEmpty($Response->getRequest());
+        $this->assertEquals(FALSE,$Response->extract());
+        $Response->setRequest($this->Request);
+        $this->assertEquals(FALSE,$Response->extract());
+        $this->Request->send();
+        $this->assertEquals(TRUE,$Response->extract());
+        $this->assertNotEmpty($Response->getInfo());
+        $this->assertNotEmpty($Response->getBody());
+        $this->assertNotEmpty($Response->getHeaders());
+        $this->assertNotEmpty($Response->getStatus());
+        $this->assertEquals($this->Request,$Response->getRequest());
+        $this->Request = new Curl('www.google.com');
+        $Response->setRequest($this->Request);
+        $this->assertEmpty($Response->getInfo());
+        $this->assertEmpty($Response->getBody());
+        $this->assertEmpty($Response->getHeaders());
+        $this->assertEmpty($Response->getStatus());
+        $this->assertEquals($this->Request,$Response->getRequest());
+    }
+
+    /**
+     * @covers ::extractInfo
+     */
     public function testExtraInfo(){
         $Response = new ResponseTestStub($this->Request);
         $this->Request->send();

@@ -23,40 +23,73 @@ abstract class AbstractResponse implements ResponseInterface
      * Extracted headers from cURL Response
      * @var string
      */
-    protected $headers;
+    protected $headers = NULL;
 
     /**
      * Extracted body from cURL Response
      * @var mixed
      */
-    protected $body;
+    protected $body = NULL;
 
     /**
      * The HTTP Status Code of Request
      * @var string
      */
-    protected $status;
+    protected $status = NULL;
 
     /**
      * The cURL Resource information returned via curl_getinfo
      * @var array
      */
-    protected $info;
+    protected $info = array();
 
-    public function __construct(RequestInterface $Request)
+    public function __construct(RequestInterface $Request = NULL)
     {
-        $this->Request = $Request;
+        if ($Request !== NULL){
+            $this->setRequest($Request);
+        }
         $this->extract();
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function setRequest(RequestInterface $Request){
+        $this->Request = $Request;
+        $this->reset();
+        return $this;
+    }
+
+    /**
+     * Reset the Response Object
+     */
+    public function reset(){
+        $this->status = NULL;
+        $this->body = NULL;
+        $this->headers = NULL;
+        $this->info = array();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getRequest() {
+        return $this->Request;
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function extract()
     {
-        $error = $this->Request->getError();
-        if ($this->Request->getStatus() == Curl::STATUS_SENT && empty($error)){
-            $this->extractInfo($this->Request->getCurlResource());
-            $this->extractResponse($this->Request->getResponse());
-            $this->Request->close();
-            return TRUE;
+        if (is_object($this->Request)){
+            $error = $this->Request->getError();
+            if ($this->Request->getStatus() == Curl::STATUS_SENT && empty($error)){
+                $this->extractInfo($this->Request->getCurlResource());
+                $this->extractResponse($this->Request->getResponse());
+                $this->Request->close();
+                return TRUE;
+            }
         }
         return FALSE;
     }
