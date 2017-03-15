@@ -9,19 +9,19 @@ interface ResponseInterface
     /**
      * Set the Request Object that the Response is extracted from
      * @param RequestInterface $Request
-     * @return mixed
+     * @return self
      */
     public function setRequest(RequestInterface $Request);
 
     /**
      * Get the current configured Request Object
-     * @return mixed
+     * @return RequestInterface
      */
     public function getRequest();
 
     /**
      * Extract the Response information from the Request Object
-     * @return mixed
+     * @return bool
      */
     public function extract();
 
@@ -33,13 +33,13 @@ interface ResponseInterface
 
     /**
      * Get the Response Body
-     * @return string
+     * @return mixed
      */
     public function getBody();
 
     /**
      * Get the Response Headers
-     * @return string
+     * @return mixed
      */
     public function getHeaders();
 

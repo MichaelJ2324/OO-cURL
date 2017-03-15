@@ -7,7 +7,7 @@ interface RequestInterface
     /**
      * Set the HTTP Method the Request object will use
      * @param string $type
-     * @return $this
+     * @return self
      */
     public function setMethod($type);
 
@@ -20,7 +20,7 @@ interface RequestInterface
     /**
      * Set the Body to Request
      * @param mixed
-     * @return $this
+     * @return self
      */
     public function setBody($array);
 
@@ -34,7 +34,7 @@ interface RequestInterface
      * Add a File to the Request for Upload
      * @param $bodyKey
      * @param $fullFilePath
-     * @return $this
+     * @return self
      */
     public function addFile($bodyKey,$fullFilePath);
 
@@ -42,7 +42,7 @@ interface RequestInterface
      * Add a Header to the Request Headers property
      * @param string - Header Name
      * @param string - Header Value
-     * @return $this
+     * @return self
      */
     public function addHeader($name, $value);
 
@@ -56,14 +56,14 @@ interface RequestInterface
     /**
      * Sets the Headers property on the Request object
      * @param array $headers
-     * @return $this
+     * @return self
      */
     public function setHeaders(array $headers);
 
     /**
      * Remove a Header from the Request Object
      * @param $name
-     * @return $this
+     * @return self
      */
     public function removeHeader($name);
 
@@ -77,21 +77,21 @@ interface RequestInterface
      * Add a cURL Option to the Request
      * @param $option
      * @param $value
-     * @return $this
+     * @return self
      */
     public function addOption($option,$value);
 
     /**
      * Append multiple cURL Options to the Request
      * @param array $options
-     * @return $this
+     * @return self
      */
     public function addOptions(array $options);
 
     /**
      * Set the cURL Options on the Request
      * @param array $options
-     * @return $this
+     * @return self
      */
     public function setOptions(array $options);
 
@@ -104,14 +104,14 @@ interface RequestInterface
     /**
      * Remove a cURL Option from the Request
      * @param $name string
-     * @return $this
+     * @return self
      */
     public function removeOption($name);
 
     /**
      * Set the URL on the Request Object
      * @param string $url
-     * @return $this
+     * @return self
      */
     public function setURL($url);
 
@@ -123,7 +123,7 @@ interface RequestInterface
 
     /**
      * Execute the Curl Request. Before sending, Headers are added to the Curl Object
-     * @return $this
+     * @return self
      */
     public function send();
 
@@ -141,13 +141,13 @@ interface RequestInterface
 
     /**
      * Close the cURL Resource
-     * @return $this
+     * @return self
      */
     public function close();
 
     /**
      * Close and Restart the cURL Resource
-     * @return $this
+     * @return self
      */
     public function reset();
 
