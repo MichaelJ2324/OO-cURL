@@ -446,8 +446,6 @@ abstract class AbstractRequest implements RequestInterface
                 break;
             case self::HTTP_POST:
                 return $this->addCurlOption(CURLOPT_POST, TRUE);
-            case self::HTTP_PUT:
-                return $this->addCurlOption(CURLOPT_PUT, TRUE);
             default:
                 return $this->addCurlOption(CURLOPT_CUSTOMREQUEST, $method);
         }

@@ -412,7 +412,7 @@ class AbstractRequestTest extends \PHPUnit_Framework_TestCase {
 
         $Curl->setMethod(Curl::HTTP_PUT);
         $CompiledOptions = $Curl->getCurlOptions();
-        $this->assertEquals(TRUE,$CompiledOptions[CURLOPT_PUT]);
+        $this->assertEquals(Curl::HTTP_PUT,$CompiledOptions[CURLOPT_CUSTOMREQUEST]);
         $this->assertEquals($this->body,$CompiledOptions[CURLOPT_POSTFIELDS]);
 
         $Curl->setMethod(Curl::HTTP_DELETE);
