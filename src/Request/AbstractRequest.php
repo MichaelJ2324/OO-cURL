@@ -285,32 +285,45 @@ abstract class AbstractRequest implements RequestInterface
     /**
      * @inheritdoc
      */
-    public function addFile($bodyKey,$fullFilePath){
+    public function addFile($bodyKey,$fullFilePath,$mimeType='',$uploadName=''){
         if (file_exists($fullFilePath) && is_readable($fullFilePath)){
-            $File = $this->getLegacyFileHandle($fullFilePath);
+            $File = $this->getLegacyFileHandle($fullFilePath,$mimeType,$uploadName);
             if (version_compare(PHP_VERSION, '5.5.0') >= 0){
-                $File = $this->getFileHandle($fullFilePath);
+                $File = $this->getFileHandle($fullFilePath,$mimeType,$uploadName);
             }
             $this->body[$bodyKey] = $File;
-            $this->upload = TRUE;
+            $this->setUpload(TRUE);
         }
         return $this;
     }
 
     /**
      * @param $fullFilePath
+     * @param $mimeType
+     * @param $uploadName
      * @return string
      */
-    private function getLegacyFileHandle($fullFilePath){
-        return '@'.$fullFilePath;
+    private function getLegacyFileHandle($fullFilePath,$mimeType='',$uploadName='')
+    {
+        $fileHandle = '@'.$fullFilePath;
+        if ($mimeType !== ''){
+            $fileHandle .= ';type='.$mimeType;
+        }
+        if ($uploadName !== ''){
+            $fileHandle .= ';filename='.$uploadName;
+        }
+        return $fileHandle;
     }
 
     /**
      * @param $fullFilePath
+     * @param $mimeType
+     * @param $uploadName
      * @return \CURLFile
      */
-    private function getFileHandle($fullFilePath){
-        return new \CURLFile($fullFilePath);
+    private function getFileHandle($fullFilePath,$mimeType='',$uploadName='')
+    {
+        return new \CURLFile($fullFilePath,$mimeType,$uploadName);
     }
 
     /**
@@ -400,6 +413,24 @@ abstract class AbstractRequest implements RequestInterface
     }
 
     /**
+     * Set the upload property which allows us to track when Body is uploading a file
+     * @param bool $upload
+     * @return $this
+     */
+    public function setUpload($upload){
+        $this->upload = (bool)$upload;
+        return $this;
+    }
+
+    /**
+     * Check the upload property on the Request Object
+     * @return bool
+     */
+    public function getUpload(){
+        return $this->upload;
+    }
+
+    /**
      * @inheritdoc
      */
     public function getCurlResource()
@@ -480,9 +511,10 @@ abstract class AbstractRequest implements RequestInterface
      * @return bool
      */
     protected function configureBody($body){
+        $upload = $this->getUpload();
         switch ($this->method) {
             case self::HTTP_GET:
-                if (!$this->upload){
+                if (!$upload){
                     if (is_array($body) || is_object($body)){
                         $queryParams = http_build_query($body);
                     } else {
@@ -499,7 +531,7 @@ abstract class AbstractRequest implements RequestInterface
                     break;
                 }
             default:
-                if ($this->upload){
+                if ($upload){
                     $this->addHeader('Content-Type','multipart/form-data');
                 }
                 return $this->addCurlOption(CURLOPT_POSTFIELDS, $body);
