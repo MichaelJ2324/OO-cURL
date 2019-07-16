@@ -3,12 +3,12 @@
 [![Coverage Status](https://coveralls.io/repos/github/MichaelJ2324/OO-cURL/badge.svg)](https://coveralls.io/github/MichaelJ2324/OO-cURL)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-#Object Oriented cURL#
+# Object Oriented cURL
 
-##Overview##
+## Overview
 A very simple object oriented design pattern for working with PHP cURL
 
-##Usage
+## Usage
 Use it where-ever you don't want to use standard cURL Resource by including via Composer
 
 <pre>composer require 'michaelj2324/oo-curl'</pre>
